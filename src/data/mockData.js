@@ -1,5 +1,3 @@
-// Previous mock data...
-
 // Mock Quotes Data
 export const mockQuotes = [
   {
@@ -69,24 +67,6 @@ export const mockJobs = [
     team: ['Mike', 'Steve', 'Tom'],
     equipment: ['Commercial Pressure Washer', 'Lift', 'Chemical Sprayer']
   },
-  {
-    id: '3',
-    title: 'Deck and Driveway Package',
-    client: {
-      name: 'Sarah Johnson',
-      email: 'sarah.j@example.com',
-      phone: '(555) 456-7890',
-      address: '789 Oak Rd, Suburb, USA 13579'
-    },
-    date: '2024-07-17T10:00:00',
-    duration: 4,
-    status: 'In Progress',
-    price: 450,
-    notes: 'Wooden deck needs special care, oil stains on driveway',
-    services: ['Deck & Patio Restoration', 'Driveway & Walkway Cleaning'],
-    team: ['Steve', 'Tom'],
-    equipment: ['Power Washer', 'Surface Cleaner', 'Deck Brush']
-  }
 ];
 
 // Calendar Events Data

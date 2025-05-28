@@ -35,7 +35,8 @@ export default {
   props: {
     service: {
       type: Object,
-      required: true
+      required: false,
+      default: null
     }
   },
   emits: ['edit', 'delete']

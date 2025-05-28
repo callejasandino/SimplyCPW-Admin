@@ -1,346 +1,468 @@
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <div>
-        <h2 class="text-2xl font-semibold text-charcoal">Jobs</h2>
-        <p class="text-sm text-gray-500">Manage and track your service jobs</p>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative">
-          <select 
-            v-model="statusFilter" 
-            class="form-input pr-8 appearance-none"
-          >
-            <option value="all">All Status</option>
-            <option v-for="status in statuses" :key="status" :value="status">
-              {{ status }}
-            </option>
-          </select>
-          <ChevronDownIcon class="absolute right-2 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-        </div>
-        <button @click="showAddForm = true" class="btn btn-primary">
-          <PlusIcon class="h-5 w-5 mr-2" />
-          Create Job
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <h1 class="text-2xl font-bold text-neutral-dark">Jobs</h1>
+      
+      <div class="flex items-center space-x-2">
+        <button
+          @click="showAddJobModal = true"
+          class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Job
         </button>
       </div>
     </div>
     
-    <!-- Jobs List -->
-    <div v-if="filteredJobs.length > 0" class="space-y-4">
-      <div v-for="job in filteredJobs" :key="job.id" class="card hover:shadow-lg transition-shadow duration-200">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex-1">
-            <div class="flex items-start justify-between">
-              <div>
-                <h3 class="text-lg font-medium text-charcoal">{{ job.title }}</h3>
-                <p class="text-sm text-gray-500">{{ job.client.name }}</p>
-              </div>
-              <span 
-                class="px-2 py-1 text-sm rounded-full"
-                :class="getStatusClass(job.status)"
-              >
-                {{ job.status }}
-              </span>
-            </div>
-            
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p class="text-sm font-medium text-gray-500">Date & Time</p>
-                <p>{{ formatDateTime(job.date) }}</p>
-                <p class="text-sm text-gray-500">Duration: {{ job.duration }}h</p>
-              </div>
-              
-              <div>
-                <p class="text-sm font-medium text-gray-500">Location</p>
-                <p class="text-sm">{{ job.client.address }}</p>
-              </div>
-              
-              <div>
-                <p class="text-sm font-medium text-gray-500">Team</p>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <span 
-                    v-for="member in job.team" 
-                    :key="member"
-                    class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                  >
-                    {{ member }}
-                  </span>
-                </div>
-              </div>
+    <DataTable
+      :data="jobs"
+      :columns="columns"
+      :row-clickable="true"
+      :searchable="true"
+      @row-click="handleRowClick"
+    >
+      <template #status="{ item }">
+        <StatusBadge :status="item.status" size="sm" />
+      </template>
+    </DataTable>
+
+    <!-- Add Job Modal -->
+    <Modal
+      :show="showAddJobModal"
+      title="Add New Job"
+      @close="showAddJobModal = false"
+    >
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Job Title
+          </label>
+          <input
+            v-model="newJob.title"
+            type="text"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-medium text-neutral-dark">Client Information</h3>
+          
+          <div>
+            <label class="block text-sm font-medium text-neutral mb-1">
+              Client Name
+            </label>
+            <input
+              v-model="newJob.client.name"
+              type="text"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral mb-1">
+              Email
+            </label>
+            <input
+              v-model="newJob.client.email"
+              type="email"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral mb-1">
+              Phone
+            </label>
+            <input
+              v-model="newJob.client.phone"
+              type="tel"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral mb-1">
+              Address
+            </label>
+            <input
+              v-model="newJob.client.address"
+              type="text"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-dark mb-1">
+              Date
+            </label>
+            <input
+              v-model="newJob.date"
+              type="datetime-local"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral-dark mb-1">
+              Duration (hours)
+            </label>
+            <input
+              v-model.number="newJob.duration"
+              type="number"
+              min="1"
+              class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Status
+          </label>
+          <select
+            v-model="newJob.status"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="Scheduled">Scheduled</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Price
+          </label>
+          <input
+            v-model.number="newJob.price"
+            type="number"
+            min="0"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Notes
+          </label>
+          <textarea
+            v-model="newJob.notes"
+            rows="3"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          ></textarea>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-neutral-dark">
+              Team Members
+            </label>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            <div 
+              v-for="member in members" 
+              :key="member.id" 
+              class="flex items-center space-x-2 p-2 border border-neutral-light rounded-lg"
+            >
+              <input 
+                type="checkbox" 
+                :id="`new-member-${member.id}`" 
+                :value="member.id"
+                v-model="newJob.team"
+                class="h-4 w-4 text-primary focus:ring-primary border-neutral-light rounded"
+              />
+              <label :for="`new-member-${member.id}`" class="text-sm text-neutral-dark">
+                {{ member.name }}
+              </label>
             </div>
           </div>
-          
-          <div class="flex items-center gap-3 md:self-start">
-            <button 
-              @click="viewJob(job)"
-              class="btn btn-secondary text-sm px-4"
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-neutral-dark">
+              Equipment
+            </label>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            <div 
+              v-for="equipment in equipments" 
+              :key="equipment.id" 
+              class="flex items-center space-x-2 p-2 border border-neutral-light rounded-lg"
             >
-              View Details
-            </button>
-            <button 
-              @click="confirmDelete(job.id)"
-              class="btn bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm px-4"
-            >
-              <Trash2Icon class="h-4 w-4" />
-            </button>
+              <input 
+                type="checkbox" 
+                :id="`new-equipment-${equipment.id}`" 
+                :value="equipment.id"
+                v-model="newJob.equipment"
+                class="h-4 w-4 text-primary focus:ring-primary border-neutral-light rounded"
+              />
+              <label :for="`new-equipment-${equipment.id}`" class="text-sm text-neutral-dark">
+                {{ equipment.name }}
+              </label>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Empty State -->
-    <div v-else-if="jobs.length === 0" class="card p-12 flex flex-col items-center justify-center">
-      <BriefcaseIcon class="h-16 w-16 text-gray-300 mb-4" />
-      <h3 class="text-xl font-medium text-charcoal mb-2">No Jobs Yet</h3>
-      <p class="text-gray-500 text-center mb-6">Start by creating your first job.</p>
-      <button @click="showAddForm = true" class="btn btn-primary">
-        <PlusIcon class="h-5 w-5 mr-2" />
-        Create Job
-      </button>
-    </div>
-    
-    <!-- No Results -->
-    <div v-else class="card p-12 flex flex-col items-center justify-center">
-      <SearchXIcon class="h-16 w-16 text-gray-300 mb-4" />
-      <h3 class="text-xl font-medium text-charcoal mb-2">No Matching Jobs</h3>
-      <p class="text-gray-500 text-center mb-6">Try adjusting your filter settings.</p>
-      <button @click="statusFilter = 'all'" class="btn btn-secondary">
-        Show All Jobs
-      </button>
-    </div>
-    
-    <!-- Job Details Modal -->
-    <div v-if="selectedJob" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="text-lg font-semibold">Job Details</h3>
-          <button @click="selectedJob = null" class="p-1">
-            <XIcon class="h-6 w-6" />
+
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="showAddJobModal = false"
+            class="px-4 py-2 text-sm font-medium text-neutral-dark border border-neutral-light rounded-lg hover:bg-neutral-light"
+          >
+            Cancel
+          </button>
+          <button
+            @click="createJob"
+            class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark"
+          >
+            Create Job
           </button>
         </div>
-        <div class="p-6">
-          <div class="flex justify-between items-start mb-6">
-            <div>
-              <h4 class="text-xl font-medium text-charcoal">{{ selectedJob.title }}</h4>
-              <p class="text-gray-500">${{ selectedJob.price }}</p>
-            </div>
-            <span 
-              class="px-2 py-1 text-sm rounded-full"
-              :class="getStatusClass(selectedJob.status)"
-            >
-              {{ selectedJob.status }}
-            </span>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h5 class="font-medium mb-2">Client Information</h5>
-              <div class="space-y-2">
-                <p><span class="text-gray-500">Name:</span> {{ selectedJob.client.name }}</p>
-                <p><span class="text-gray-500">Email:</span> {{ selectedJob.client.email }}</p>
-                <p><span class="text-gray-500">Phone:</span> {{ selectedJob.client.phone }}</p>
-                <p><span class="text-gray-500">Address:</span> {{ selectedJob.client.address }}</p>
-              </div>
-            </div>
-            
-            <div>
-              <h5 class="font-medium mb-2">Job Details</h5>
-              <div class="space-y-2">
-                <p>
-                  <span class="text-gray-500">Date:</span> 
-                  {{ formatDateTime(selectedJob.date) }}
-                </p>
-                <p>
-                  <span class="text-gray-500">Duration:</span> 
-                  {{ selectedJob.duration }} hours
-                </p>
-                <div>
-                  <span class="text-gray-500">Services:</span>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                    <span 
-                      v-for="service in selectedJob.services" 
-                      :key="service"
-                      class="px-2 py-1 text-xs bg-secondary-light text-primary rounded-full"
-                    >
-                      {{ service }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="md:col-span-2">
-              <h5 class="font-medium mb-2">Team & Equipment</h5>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p class="text-gray-500 mb-1">Team Members:</p>
-                  <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="member in selectedJob.team" 
-                      :key="member"
-                      class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                    >
-                      {{ member }}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p class="text-gray-500 mb-1">Equipment:</p>
-                  <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="item in selectedJob.equipment" 
-                      :key="item"
-                      class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                    >
-                      {{ item }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="md:col-span-2">
-              <h5 class="font-medium mb-2">Notes</h5>
-              <p class="text-gray-600">{{ selectedJob.notes }}</p>
-            </div>
-          </div>
-          
-          <div class="flex justify-end mt-6 space-x-3">
-            <button 
-              @click="selectedJob = null" 
-              class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Close
-            </button>
-            <button 
-              @click="editJob(selectedJob)"
-              class="btn btn-primary"
-            >
-              Edit Job
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-md w-full">
-        <div class="p-6">
-          <AlertTriangleIcon class="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 class="text-lg font-semibold text-center mb-2">Delete Job?</h3>
-          <p class="text-gray-500 text-center mb-6">
-            Are you sure you want to delete this job? This action cannot be undone.
-          </p>
-          <div class="flex justify-center space-x-3">
-            <button 
-              @click="showDeleteConfirm = false" 
-              class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="deleteJob" 
-              class="btn bg-red-500 text-white hover:bg-red-600"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script>
-import { 
-  PlusIcon, 
-  XIcon, 
-  BriefcaseIcon, 
-  AlertTriangleIcon,
-  ChevronDownIcon,
-  SearchXIcon,
-  Trash2Icon
-} from 'lucide-vue-next'
-import { mockJobs } from '../data/mock-data.js'
+import { useRouter } from 'vue-router'
+import DataTable from '../components/ui/DataTable.vue'
+import StatusBadge from '../components/ui/StatusBadge.vue'
+import Modal from '../components/ui/Modal.vue'
+import { mockJobs } from '../data/mockData'
+import { format } from 'date-fns'
+import { useClientJobStore } from '../store/clientjobs'
+import { useMembersStore } from '../store/members'
+import { useEquipmentStore } from '../store/equipment'
+import { mapActions } from 'pinia'
 
 export default {
+  name: 'JobsPage',
   components: {
-    PlusIcon,
-    XIcon,
-    BriefcaseIcon,
-    AlertTriangleIcon,
-    ChevronDownIcon,
-    SearchXIcon,
-    Trash2Icon
+    DataTable,
+    StatusBadge,
+    Modal
   },
   data() {
     return {
-      jobs: [...mockJobs],
-      selectedJob: null,
-      showAddForm: false,
-      showDeleteConfirm: false,
-      jobToDelete: null,
-      statusFilter: 'all',
-      statuses: ['Scheduled', 'Confirmed', 'In Progress', 'Completed', 'Cancelled']
+      jobs: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1
+      },
+      showAddJobModal: false,
+      newJob: {
+        title: '',
+        client: {
+          name: '',
+          email: '',
+          phone: '',
+          address: ''
+        },
+        date: '',
+        duration: 1,
+        status: 'Scheduled',
+        price: 0,
+        notes: '',
+        services: [],
+        team: [],
+        equipment: []
+      },
+      columns: [
+        { 
+          key: 'title', 
+          label: 'Job Title'
+        },
+        { 
+          key: 'client', 
+          label: 'Client',
+          accessor: (item) => {
+            try {
+              const clientData = JSON.parse(item.client);
+              return `${clientData.firstName} ${clientData.lastName}`;
+            } catch (e) {
+              return 'Unknown Client';
+            }
+          }
+        },
+        { 
+          key: 'date', 
+          label: 'Date',
+          accessor: (item) => format(new Date(item.date), 'MMM dd, yyyy')
+        },
+        { 
+          key: 'price', 
+          label: 'Price',
+          accessor: (item) => `$${item.price}`
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          cellClassName: 'text-center'
+        }
+      ]
+    }
+  },
+  created() {
+    this.fetchClientJobs();
+    this.fetchMembers();
+    this.fetchEquipments();
+  },
+  methods: {
+    ...mapActions(useClientJobStore, [
+      'fetchClientJobs',
+      'addClientJob',
+      'updateClientJob',
+      'deleteClientJob'
+    ]),
+    ...mapActions(useMembersStore, [
+      'fetchMembers'
+    ]),
+    ...mapActions(useEquipmentStore, [
+      'fetchEquipments'
+    ]),
+    handleRowClick(job) {
+      // Navigate to job detail with just the ID
+      this.$router.push({
+        name: 'JobDetail',
+        params: { id: job.id }
+      });
+    },
+    createJob() {
+      // Format the job data to match API expectations
+      const formattedJob = { ...this.newJob };
+      
+      // Ensure team and equipment are arrays of integers
+      formattedJob.team = this.newJob.team.map(id => parseInt(id)).filter(id => !isNaN(id));
+      formattedJob.equipment = this.newJob.equipment.map(id => parseInt(id)).filter(id => !isNaN(id));
+      
+      // Add client as a formatted object
+      formattedJob.client = JSON.stringify({
+        firstName: this.newJob.client.name.split(' ')[0],
+        lastName: this.newJob.client.name.split(' ').slice(1).join(' '),
+        email: this.newJob.client.email,
+        phone: this.newJob.client.phone,
+        address: this.newJob.client.address
+      });
+      
+      this.addClientJob(formattedJob);
+      this.showAddJobModal = false;
+      
+      // Reset the form
+      this.newJob = {
+        title: '',
+        client: {
+          name: '',
+          email: '',
+          phone: '',
+          address: ''
+        },
+        date: '',
+        duration: 1,
+        status: 'Scheduled',
+        price: 0,
+        notes: '',
+        services: [],
+        team: [],
+        equipment: []
+      };
+    },
+    parsedJobs(jobsData) {
+      if (!jobsData || !jobsData.data) return [];
+      
+      return jobsData.data.map(job => {
+        // Create a new job object with parsed fields
+        const parsedJob = { ...job };
+        
+        // Parse JSON strings into objects/arrays
+        try {
+          if (typeof job.client === 'string') {
+            parsedJob.client = JSON.parse(job.client);
+          }
+          
+          if (typeof job.services === 'string') {
+            parsedJob.services = JSON.parse(job.services);
+          }
+          
+          if (typeof job.team === 'string') {
+            parsedJob.team = JSON.parse(job.team);
+          }
+          
+          if (typeof job.equipment === 'string') {
+            parsedJob.equipment = JSON.parse(job.equipment);
+          }
+        } catch (e) {
+          console.error('Error parsing job data:', e);
+        }
+        
+        return parsedJob;
+      });
+    },
+    updatePagination(paginationData) {
+      if (!paginationData) return;
+      
+      this.pagination = {
+        currentPage: paginationData.current_page || 1,
+        totalPages: paginationData.last_page || 1,
+        total: paginationData.total || 0,
+        perPage: paginationData.per_page || 10,
+        nextPageUrl: paginationData.next_page_url,
+        prevPageUrl: paginationData.prev_page_url
+      };
     }
   },
   computed: {
-    filteredJobs() {
-      if (this.statusFilter === 'all') {
-        return this.jobs
-      }
-      return this.jobs.filter(job => job.status === this.statusFilter)
+    clientJobStore() {
+      return useClientJobStore();
+    },
+    clientJobs() {
+      return this.clientJobStore.clientJobs;
+    },
+    membersStore() {
+      return useMembersStore();
+    },
+    members() {
+      return this.membersStore.members;
+    },
+    equipmentStore() {
+      return useEquipmentStore();
+    },
+    equipments() {
+      return this.equipmentStore.equipments;
+    },
+    processedJobs() {
+      return this.jobs;
     }
   },
-  methods: {
-    formatDateTime(dateString) {
-      return new Date(dateString).toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric'
-      })
-    },
-    
-    getStatusClass(status) {
-      switch (status) {
-        case 'Scheduled':
-          return 'bg-secondary-light text-secondary'
-        case 'Confirmed':
-          return 'bg-green-100 text-green'
-        case 'In Progress':
-          return 'bg-orange-100 text-orange'
-        case 'Completed':
-          return 'bg-primary-light text-primary'
-        case 'Cancelled':
-          return 'bg-red-100 text-red-500'
-        default:
-          return 'bg-gray-100 text-gray-600'
-      }
-    },
-    
-    viewJob(job) {
-      this.selectedJob = job
-    },
-    
-    editJob(job) {
-      // Implement edit functionality
-      alert('Edit job functionality to be implemented')
-    },
-    
-    confirmDelete(id) {
-      this.jobToDelete = id
-      this.showDeleteConfirm = true
-    },
-    
-    deleteJob() {
-      this.jobs = this.jobs.filter(job => job.id !== this.jobToDelete)
-      this.showDeleteConfirm = false
-      this.jobToDelete = null
-      alert('Job deleted successfully!')
+  watch: {
+    clientJobs: {
+      handler(newJobs) {
+        if (newJobs) {
+          // Handle paginated response structure
+          if (newJobs.data) {
+            // Store pagination info
+            this.updatePagination(newJobs);
+            
+            // Parse jobs from the data array
+            this.jobs = this.parsedJobs(newJobs);
+          } else if (Array.isArray(newJobs)) {
+            // Handle case where clientJobs is a simple array
+            this.jobs = this.parsedJobs({ data: newJobs });
+          } else {
+            // Fallback to empty array
+            this.jobs = [];
+          }
+        }
+      },
+      immediate: true,
+      deep: true
     }
   }
 }

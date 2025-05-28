@@ -1,238 +1,205 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-semibold text-charcoal">Services</h2>
-      <button @click="showAddServiceForm = true" class="btn btn-primary">
-        <PlusIcon class="h-5 w-5 mr-2" />
-        Add New Service
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
+      <button
+        @click="showAddServiceModal = true"
+        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Service
       </button>
     </div>
     
-    <!-- Service Grid -->
-    <div v-if="services.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <ServiceCard 
-        v-for="service in services" 
-        :key="service.id" 
-        :service="service"
-        @edit="editService"
-        @delete="confirmDeleteService"
-      />
+    <!-- Loading state -->
+    <div v-if="serviceStore.isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
     </div>
     
-    <!-- Empty State -->
-    <div v-else class="card p-12 flex flex-col items-center justify-center">
-      <PackageIcon class="h-16 w-16 text-gray-300 mb-4" />
-      <h3 class="text-xl font-medium text-charcoal mb-2">No Services Yet</h3>
-      <p class="text-gray-500 text-center mb-6">Start by adding your first service offering.</p>
-      <button @click="showAddServiceForm = true" class="btn btn-primary">
-        <PlusIcon class="h-5 w-5 mr-2" />
-        Add New Service
-      </button>
+    <!-- Error state -->
+    <div v-else-if="serviceStore.error" class="bg-red-50 p-4 rounded-lg text-red-600">
+      {{ serviceStore.error }}
     </div>
     
-    <!-- Add/Edit Service Modal -->
-    <div v-if="showAddServiceForm || editingService" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-lg w-full">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="text-lg font-semibold">{{ editingService ? 'Edit Service' : 'Add New Service' }}</h3>
-          <button @click="closeForm" class="p-1">
-            <XIcon class="h-6 w-6" />
-          </button>
-        </div>
+    <!-- Services grid -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-5 gap-6">
+      <div
+        v-for="service in serviceStore.services"
+        :key="service.id"
+        class="bg-white rounded-lg shadow-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+        @click="navigateToService(service)"
+      >
+        <img :src="service.image" class="w-full h-48 object-cover">
         <div class="p-6">
-          <form @submit.prevent="saveService">
-            <div class="mb-4">
-              <label for="name" class="form-label">Service Name</label>
-              <input 
-                type="text" 
-                id="name" 
-                v-model="serviceForm.name" 
-                class="form-input" 
-                required
-              />
-            </div>
-            
-            <div class="mb-4">
-              <label for="description" class="form-label">Description</label>
-              <textarea 
-                id="description" 
-                v-model="serviceForm.description" 
-                rows="3" 
-                class="form-input" 
-                required
-              ></textarea>
-            </div>
-            
-            <div class="mb-4">
-              <label for="price" class="form-label">Price ($)</label>
-              <input 
-                type="number" 
-                id="price" 
-                v-model="serviceForm.price" 
-                class="form-input" 
-                min="0" 
-                step="0.01" 
-                required
-              />
-            </div>
-            
-            <div class="mb-6">
-              <label for="image" class="form-label">Image URL</label>
-              <input 
-                type="url" 
-                id="image" 
-                v-model="serviceForm.image" 
-                class="form-input" 
-                required
-              />
-              
-              <div v-if="serviceForm.image" class="mt-3">
-                <img 
-                  :src="serviceForm.image" 
-                  alt="Service Preview" 
-                  class="h-32 w-full object-cover rounded-md"
-                />
-              </div>
-            </div>
-            
-            <div class="flex justify-end space-x-3">
-              <button 
-                type="button" 
-                @click="closeForm" 
-                class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                class="btn btn-primary"
-              >
-                {{ editingService ? 'Update Service' : 'Add Service' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-md w-full">
-        <div class="p-6">
-          <AlertTriangleIcon class="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 class="text-lg font-semibold text-center mb-2">Delete Service?</h3>
-          <p class="text-gray-500 text-center mb-6">
-            Are you sure you want to delete this service? This action cannot be undone.
-          </p>
-          <div class="flex justify-center space-x-3">
-            <button 
-              @click="showDeleteConfirm = false" 
-              class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="deleteService" 
-              class="btn bg-red-500 text-white hover:bg-red-600"
-            >
-              Delete
-            </button>
+          <h3 class="text-lg font-semibold text-neutral-dark mb-2">{{ service.name }}</h3>
+          <p class="text-neutral mb-4">{{ ellipsis(service.description) }}</p>
+          <div class="flex justify-between items-center text-sm">
+            <span class="font-medium text-primary">Price: ${{ service.price }}</span>
+            <span class="text-neutral">Duration: {{ service.duration }}</span>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Add Service Modal -->
+    <Modal
+      :show="showAddServiceModal"
+      title="Add New Service"
+      @close="showAddServiceModal = false"
+    >
+      <div class="space-y-4">
+        <div>
+          <div class="space-y-2">
+              <img :src="imagePreview || newService.image" class="w-full h-60 object-cover rounded-lg mb-2">
+              <input 
+                  type="file" 
+                  @change="handleImageChange" 
+                  accept="image/*"
+                  class="block w-full text-sm text-neutral-dark
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-medium
+                        file:bg-primary file:text-white
+                        hover:file:bg-primary-dark"
+              />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Service Name
+          </label>
+          <input
+            v-model="newService.name"
+            type="text"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Description
+          </label>
+          <textarea
+            v-model="newService.description"
+            rows="3"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Price
+          </label>
+          <input
+            v-model="newService.price"
+            type="text"
+            placeholder="e.g., From $200"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-neutral-dark mb-1">
+            Duration
+          </label>
+          <input
+            v-model="newService.duration"
+            type="text"
+            placeholder="e.g., 2-4 hours"
+            class="w-full px-3 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="showAddServiceModal = false"
+            class="px-4 py-2 text-sm font-medium text-neutral-dark border border-neutral-light rounded-lg hover:bg-neutral-light"
+          >
+            Cancel
+          </button>
+          <button
+            @click="createService"
+            class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark"
+          >
+            Create Service
+          </button>
+        </div>
+      </template>
+    </Modal>
+
+    <ServiceDetailModal 
+      :show="showServiceDetailModal" 
+      :service="selectedService" 
+      @close="showServiceDetailModal = false" 
+    />
   </div>
 </template>
 
-<script>
-import { PlusIcon, XIcon, PackageIcon, AlertTriangleIcon } from 'lucide-vue-next'
-import ServiceCard from '../components/ServiceCard.vue'
-import { mockServices } from '../data/mock-data.js'
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import Modal from '../components/ui/Modal.vue'
+import { useServiceStore } from '../store/service'
+import ServiceDetailModal from '../components/modals/ServiceDetailModal.vue'
+const router = useRouter()
+const serviceStore = useServiceStore()
+const showAddServiceModal = ref(false)
+const showServiceDetailModal = ref(false)
+const selectedService = ref(null)
 
-export default {
-  components: {
-    ServiceCard,
-    PlusIcon,
-    XIcon,
-    PackageIcon,
-    AlertTriangleIcon
-  },
-  data() {
-    return {
-      services: [...mockServices],
-      showAddServiceForm: false,
-      editingService: null,
-      serviceForm: {
-        name: '',
-        description: '',
-        price: 0,
-        image: ''
-      },
-      showDeleteConfirm: false,
-      serviceToDelete: null
+const newService = ref({
+  name: '',
+  description: '',
+  price: '',
+  duration: '',
+  image: ''
+})
+
+const imagePreview = ref(null)
+
+onMounted( async () => {
+  await serviceStore.fetchServices()
+  newService.value = serviceStore.services
+})
+
+const navigateToService = (service) => {
+  // router.push(`/services/${serviceId}`)
+  selectedService.value = service
+  showServiceDetailModal.value = true
+}
+
+function createService() {
+  if (newService.value.name && newService.value.description) {
+    serviceStore.addService(newService.value)
+    // Reset form
+    newService.value = {
+      name: '',
+      description: '',
+      price: '',
+      duration: '',
+      image: ''
     }
-  },
-  methods: {
-    // Show edit service form
-    editService(service) {
-      this.editingService = service
-      this.serviceForm = { ...service }
-    },
-    
-    // Show delete confirmation
-    confirmDeleteService(id) {
-      this.serviceToDelete = id
-      this.showDeleteConfirm = true
-    },
-    
-    // Delete service
-    deleteService() {
-      this.services = this.services.filter(service => service.id !== this.serviceToDelete)
-      this.showDeleteConfirm = false
-      this.serviceToDelete = null
-      
-      // Show toast notification (mock)
-      alert('Service deleted successfully!')
-    },
-    
-    // Save service (add or update)
-    saveService() {
-      if (this.editingService) {
-        // Update existing service
-        const index = this.services.findIndex(s => s.id === this.editingService.id)
-        if (index !== -1) {
-          this.services[index] = {
-            ...this.editingService,
-            ...this.serviceForm
-          }
-        }
-      } else {
-        // Add new service
-        const newService = {
-          id: Date.now().toString(),
-          ...this.serviceForm
-        }
-        this.services.push(newService)
-      }
-      
-      // Reset form and close modal
-      this.closeForm()
-      
-      // Show toast notification (mock)
-      alert(this.editingService ? 'Service updated successfully!' : 'Service added successfully!')
-    },
-    
-    // Close form and reset
-    closeForm() {
-      this.showAddServiceForm = false
-      this.editingService = null
-      this.serviceForm = {
-        name: '',
-        description: '',
-        price: 0,
-        image: ''
-      }
-    }
+    showAddServiceModal.value = false
   }
+}
+
+const handleImageChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+    newService.value.image = file
+  }
+}
+
+function ellipsis(text) {
+  return text.length > 100 ? text.substring(0, 100) + '...' : text
 }
 </script>

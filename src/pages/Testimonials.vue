@@ -1,253 +1,69 @@
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { mockTestimonials } from '../data/mockData'
+import { format } from 'date-fns'
+
+const router = useRouter()
+const testimonials = ref([...mockTestimonials])
+
+const formatDate = (dateString) => {
+  return format(new Date(dateString), 'MMM dd, yyyy')
+}
+
+const navigateToTestimonial = (testimonialId) => {
+  router.push(`/testimonials/${testimonialId}`)
+}
+</script>
+
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h2 class="text-2xl font-semibold text-charcoal">Testimonials</h2>
-        <p class="text-sm text-gray-500">Manage client reviews and feedback</p>
-      </div>
-      <button @click="showAddForm = true" class="btn btn-primary">
-        <PlusIcon class="h-5 w-5 mr-2" />
-        Add Testimonial
-      </button>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-neutral-dark">Testimonials</h1>
     </div>
     
-    <!-- Testimonials Grid -->
-    <div v-if="testimonials.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <TestimonialCard 
-        v-for="testimonial in testimonials" 
-        :key="testimonial.id" 
-        :testimonial="testimonial"
-        @edit="editTestimonial"
-        @delete="confirmDelete"
-      />
-    </div>
-    
-    <!-- Empty State -->
-    <div v-else class="card p-12 flex flex-col items-center justify-center">
-      <MessageSquareIcon class="h-16 w-16 text-gray-300 mb-4" />
-      <h3 class="text-xl font-medium text-charcoal mb-2">No Testimonials Yet</h3>
-      <p class="text-gray-500 text-center mb-6">Start adding client testimonials to showcase your work.</p>
-      <button @click="showAddForm = true" class="btn btn-primary">
-        <PlusIcon class="h-5 w-5 mr-2" />
-        Add Testimonial
-      </button>
-    </div>
-    
-    <!-- Add/Edit Modal -->
-    <div v-if="showAddForm || editingTestimonial" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-lg w-full">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="text-lg font-semibold">
-            {{ editingTestimonial ? 'Edit Testimonial' : 'Add New Testimonial' }}
-          </h3>
-          <button @click="closeForm" class="p-1">
-            <XIcon class="h-6 w-6" />
-          </button>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        v-for="testimonial in testimonials"
+        :key="testimonial.id"
+        class="bg-white rounded-lg shadow-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+        @click="navigateToTestimonial(testimonial.id)"
+      >
         <div class="p-6">
-          <form @submit.prevent="saveTestimonial">
-            <div class="mb-4">
-              <label class="form-label" for="name">Client Name</label>
-              <input 
-                type="text" 
-                id="name" 
-                v-model="testimonialForm.name" 
-                class="form-input"
-                required
-              />
+          <div class="flex items-center mb-4">
+            <img
+              :src="testimonial.image"
+              :alt="testimonial.name"
+              class="w-12 h-12 rounded-full object-cover"
+            />
+            <div class="ml-4">
+              <h3 class="text-lg font-semibold text-neutral-dark">{{ testimonial.name }}</h3>
+              <p class="text-neutral text-sm">{{ formatDate(testimonial.date) }}</p>
             </div>
-            
-            <div class="mb-4">
-              <label class="form-label" for="image">Client Image URL</label>
-              <input 
-                type="url" 
-                id="image" 
-                v-model="testimonialForm.image" 
-                class="form-input"
-                required
-              />
-              <div v-if="testimonialForm.image" class="mt-2">
-                <img 
-                  :src="testimonialForm.image" 
-                  alt="Preview" 
-                  class="w-16 h-16 rounded-full object-cover"
-                />
-              </div>
-            </div>
-            
-            <div class="mb-4">
-              <label class="form-label">Rating</label>
-              <div class="flex space-x-2">
-                <button 
-                  v-for="i in 5" 
-                  :key="i"
-                  type="button"
-                  @click="testimonialForm.rating = i"
-                  class="focus:outline-none"
-                >
-                  <StarIcon 
-                    :class="[
-                      'h-8 w-8',
-                      i <= testimonialForm.rating ? 'text-orange fill-current' : 'text-gray-300'
-                    ]"
-                  />
-                </button>
-              </div>
-            </div>
-            
-            <div class="mb-4">
-              <label class="form-label" for="title">Title</label>
-              <input 
-                type="text" 
-                id="title" 
-                v-model="testimonialForm.title" 
-                class="form-input"
-                required
-              />
-            </div>
-            
-            <div class="mb-6">
-              <label class="form-label" for="description">Description</label>
-              <textarea 
-                id="description" 
-                v-model="testimonialForm.description" 
-                rows="3" 
-                class="form-input"
-                required
-              ></textarea>
-            </div>
-            
-            <div class="flex justify-end space-x-3">
-              <button 
-                type="button" 
-                @click="closeForm" 
-                class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                class="btn btn-primary"
-              >
-                {{ editingTestimonial ? 'Update Testimonial' : 'Add Testimonial' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div class="bg-white rounded-lg max-w-md w-full">
-        <div class="p-6">
-          <AlertTriangleIcon class="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 class="text-lg font-semibold text-center mb-2">Delete Testimonial?</h3>
-          <p class="text-gray-500 text-center mb-6">
-            Are you sure you want to delete this testimonial? This action cannot be undone.
-          </p>
-          <div class="flex justify-center space-x-3">
-            <button 
-              @click="showDeleteConfirm = false" 
-              class="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="deleteTestimonial" 
-              class="btn bg-red-500 text-white hover:bg-red-600"
-            >
-              Delete
-            </button>
           </div>
+          
+          <div class="flex items-center mb-2">
+            <div class="flex">
+              <svg
+                v-for="i in 5"
+                :key="i"
+                :class="[
+                  'w-5 h-5',
+                  i <= testimonial.rating ? 'text-yellow-400' : 'text-neutral-light'
+                ]"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+          </div>
+          
+          <h4 class="text-lg font-medium text-neutral-dark mb-2">{{ testimonial.title }}</h4>
+          <p class="text-neutral line-clamp-3">{{ testimonial.description }}</p>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<script>
-import { PlusIcon, XIcon, MessageSquareIcon, StarIcon, AlertTriangleIcon } from 'lucide-vue-next'
-import TestimonialCard from '../components/TestimonialCard.vue'
-import { mockTestimonials } from '../data/mock-data.js'
-
-export default {
-  components: {
-    TestimonialCard,
-    PlusIcon,
-    XIcon,
-    MessageSquareIcon,
-    StarIcon,
-    AlertTriangleIcon
-  },
-  data() {
-    return {
-      testimonials: [...mockTestimonials],
-      showAddForm: false,
-      editingTestimonial: null,
-      showDeleteConfirm: false,
-      testimonialToDelete: null,
-      testimonialForm: {
-        name: '',
-        image: '',
-        rating: 5,
-        title: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      }
-    }
-  },
-  methods: {
-    editTestimonial(testimonial) {
-      this.editingTestimonial = testimonial
-      this.testimonialForm = { ...testimonial }
-    },
-    
-    confirmDelete(id) {
-      this.testimonialToDelete = id
-      this.showDeleteConfirm = true
-    },
-    
-    deleteTestimonial() {
-      this.testimonials = this.testimonials.filter(t => t.id !== this.testimonialToDelete)
-      this.showDeleteConfirm = false
-      this.testimonialToDelete = null
-      alert('Testimonial deleted successfully!')
-    },
-    
-    saveTestimonial() {
-      if (this.editingTestimonial) {
-        const index = this.testimonials.findIndex(t => t.id === this.editingTestimonial.id)
-        if (index !== -1) {
-          this.testimonials[index] = {
-            ...this.editingTestimonial,
-            ...this.testimonialForm
-          }
-        }
-      } else {
-        const newTestimonial = {
-          id: Date.now().toString(),
-          ...this.testimonialForm
-        }
-        this.testimonials.push(newTestimonial)
-      }
-      
-      this.closeForm()
-      alert(this.editingTestimonial ? 'Testimonial updated successfully!' : 'Testimonial added successfully!')
-    },
-    
-    closeForm() {
-      this.showAddForm = false
-      this.editingTestimonial = null
-      this.testimonialForm = {
-        name: '',
-        image: '',
-        rating: 5,
-        title: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      }
-    }
-  }
-}
-</script>

@@ -1,199 +1,218 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { 
+  CurrencyDollarIcon, 
+  BriefcaseIcon, 
+  UserGroupIcon, 
+  StarIcon 
+} from '@heroicons/vue/24/outline'
+import StatCard from '../components/ui/StatCard.vue'
+import LineChart from '../components/charts/LineChart.vue'
+import DonutChart from '../components/charts/DonutChart.vue'
+import { dashboardData, mockJobs, mockQuotes } from '../data/mockData'
+
+const router = useRouter()
+
+const recentJobs = ref(mockJobs.slice(0, 5))
+const recentQuotes = ref(mockQuotes.slice(0, 5))
+
+// Charts data
+const revenueChartData = {
+  labels: dashboardData.monthlyData.map(item => item.month),
+  datasets: [
+    {
+      label: 'Revenue',
+      data: dashboardData.monthlyData.map(item => item.revenue),
+      borderColor: '#4A90E2',
+      backgroundColor: 'rgba(74, 144, 226, 0.1)',
+      tension: 0.4,
+      fill: true,
+    },
+    {
+      label: 'Jobs',
+      data: dashboardData.monthlyData.map(item => item.jobs),
+      borderColor: '#A7E9EB',
+      backgroundColor: 'rgba(167, 233, 235, 0.1)',
+      tension: 0.4,
+      fill: true,
+    }
+  ]
+}
+
+const serviceDistributionData = {
+  labels: dashboardData.serviceDistribution.map(item => item.name),
+  datasets: [
+    {
+      data: dashboardData.serviceDistribution.map(item => item.value),
+      backgroundColor: [
+        '#4A90E2', 
+        '#A7E9EB', 
+        '#4CAF50', 
+        '#F77F00', 
+        '#DC2626'
+      ],
+      borderWidth: 0,
+    }
+  ]
+}
+
+const leadSourcesData = {
+  labels: dashboardData.leadSources.map(item => item.name),
+  datasets: [
+    {
+      data: dashboardData.leadSources.map(item => item.value),
+      backgroundColor: [
+        '#4A90E2', 
+        '#A7E9EB', 
+        '#F77F00', 
+        '#4CAF50'
+      ],
+      borderWidth: 0,
+    }
+  ]
+}
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+const navigateToJob = (jobId) => {
+  router.push(`/jobs/${jobId}`)
+}
+
+const navigateToQuote = (quoteId) => {
+  router.push(`/quotes/${quoteId}`)
+}
+</script>
+
 <template>
   <div class="space-y-6">
-    <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard 
         v-for="(stat, index) in dashboardData.stats" 
-        :key="index"
-        :title="stat.title"
-        :value="stat.value"
-        :subtitle="stat.subtitle"
-        :change="stat.change"
-        :prefix="stat.prefix"
-        :icon="getStatIcon(index)"
-        :color="getStatColor(index)"
+        :key="index" 
+        :title="stat.title" 
+        :value="stat.value" 
+        :subtitle="stat.subtitle" 
+        :change="stat.change" 
+        :prefix="stat.prefix || ''"
+        :icon="index === 0 ? CurrencyDollarIcon : index === 1 ? BriefcaseIcon : index === 2 ? UserGroupIcon : StarIcon"
       />
     </div>
     
-    <!-- Revenue & Jobs Chart -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2">
-        <ChartCard
-          title="Revenue & Jobs Completed"
-          subtitle="Track your business performance"
-          chart-type="line"
-          :chart-data="revenueJobsChartData"
-        />
-      </div>
-      <div>
-        <ChartCard
-          title="Service Distribution"
-          subtitle="Jobs by category"
-          chart-type="doughnut"
-          :chart-data="serviceDistributionChartData"
-        />
-      </div>
-    </div>
-    
-    <!-- Bottom Section -->
+    <!-- Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <ChartCard
-        title="Lead Sources"
-        subtitle="Where new clients come from"
-        chart-type="pie"
-        :chart-data="leadSourcesChartData"
-      />
-      
-      <div class="card">
-        <h3 class="text-lg font-semibold mb-4">Recent Jobs</h3>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="(job, index) in recentJobs" :key="index">
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ job.date }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ job.service }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ job.client }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${{ job.amount }}</td>
-                <td class="px-4 py-3 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs rounded-full" 
-                         :class="getStatusClass(job.status)">
-                    {{ job.status }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="bg-white rounded-lg shadow-card p-4">
+        <h2 class="text-lg font-semibold text-neutral-dark mb-4">Revenue & Jobs Overview</h2>
+        <div class="h-80">
+          <LineChart :chart-data="revenueChartData" />
         </div>
-        <div class="flex justify-center mt-4">
-          <button class="btn btn-secondary text-sm">View All Jobs</button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow-card p-4">
+          <h2 class="text-lg font-semibold text-neutral-dark mb-4">Service Distribution</h2>
+          <div class="h-64">
+            <DonutChart :chart-data="serviceDistributionData" />
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-card p-4">
+          <h2 class="text-lg font-semibold text-neutral-dark mb-4">Lead Sources</h2>
+          <div class="h-64">
+            <DonutChart :chart-data="leadSourcesData" />
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Recent Jobs -->
+      <div class="bg-white rounded-lg shadow-card overflow-hidden">
+        <div class="p-4 border-b border-neutral-light flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-neutral-dark">Recent Jobs</h2>
+          <router-link to="/jobs" class="text-sm text-primary hover:text-primary-dark">View all</router-link>
+        </div>
+        <div class="divide-y divide-neutral-light">
+          <div 
+            v-for="job in recentJobs" 
+            :key="job.id" 
+            class="p-4 hover:bg-neutral-light cursor-pointer transition-colors"
+            @click="navigateToJob(job.id)"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-neutral-dark">{{ job.title }}</h3>
+                <p class="text-sm text-neutral">{{ job.client.name }}</p>
+                <div class="flex items-center mt-1">
+                  <span class="text-xs text-neutral">{{ formatDate(job.date) }}</span>
+                  <span class="mx-2 text-neutral">•</span>
+                  <span class="text-xs text-neutral">${{ job.price }}</span>
+                </div>
+              </div>
+              <span 
+                :class="[
+                  'px-2 py-1 text-xs font-medium rounded-full',
+                  job.status === 'Completed' ? 'bg-primary-light text-primary-dark' :
+                  job.status === 'Scheduled' ? 'bg-info bg-opacity-10 text-info' :
+                  job.status === 'Confirmed' ? 'bg-success bg-opacity-10 text-success' :
+                  job.status === 'In Progress' ? 'bg-warning bg-opacity-10 text-warning' :
+                  job.status === 'Cancelled' ? 'bg-danger bg-opacity-10 text-danger' :
+                  'bg-neutral-light text-neutral'
+                ]"
+              >
+                {{ job.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Quotes -->
+      <div class="bg-white rounded-lg shadow-card overflow-hidden">
+        <div class="p-4 border-b border-neutral-light flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-neutral-dark">Recent Quotes</h2>
+          <router-link to="/quotes" class="text-sm text-primary hover:text-primary-dark">View all</router-link>
+        </div>
+        <div class="divide-y divide-neutral-light">
+          <div 
+            v-for="quote in recentQuotes" 
+            :key="quote.id" 
+            class="p-4 hover:bg-neutral-light cursor-pointer transition-colors"
+            @click="navigateToQuote(quote.id)"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-neutral-dark">{{ quote.firstName }} {{ quote.lastName }}</h3>
+                <p class="text-sm text-neutral truncate max-w-xs">{{ quote.address }}</p>
+                <div class="flex items-center mt-1">
+                  <span class="text-xs text-neutral">{{ formatDate(quote.createdAt) }}</span>
+                  <span class="mx-2 text-neutral">•</span>
+                  <span class="text-xs text-neutral">{{ quote.servicesNeeded.join(', ') }}</span>
+                </div>
+              </div>
+              <span 
+                :class="[
+                  'px-2 py-1 text-xs font-medium rounded-full',
+                  quote.status === 'Completed' ? 'bg-primary-light text-primary-dark' :
+                  quote.status === 'Pending' ? 'bg-neutral-light text-neutral' :
+                  'bg-neutral-light text-neutral'
+                ]"
+              >
+                {{ quote.status }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<script>
-import { 
-  DollarSignIcon, 
-  BarChart2Icon, 
-  UsersIcon, 
-  TrendingUpIcon 
-} from 'lucide-vue-next'
-import StatCard from '../components/StatCard.vue'
-import ChartCard from '../components/ChartCard.vue'
-import { dashboardData } from '../data/mock-data.js'
-
-export default {
-  components: {
-    StatCard,
-    ChartCard
-  },
-  data() {
-    return {
-      dashboardData,
-      recentJobs: [
-        { date: '2024-07-10', service: 'Residential House Washing', client: 'John Smith', amount: 250, status: 'Completed' },
-        { date: '2024-07-09', service: 'Driveway Cleaning', client: 'Sarah Johnson', amount: 150, status: 'Completed' },
-        { date: '2024-07-08', service: 'Commercial Building', client: 'Acme Corp', amount: 500, status: 'Completed' },
-        { date: '2024-07-07', service: 'Deck Restoration', client: 'Robert Davis', amount: 300, status: 'Completed' },
-        { date: '2024-07-11', service: 'Roof Cleaning', client: 'Emma Wilson', amount: 400, status: 'Scheduled' }
-      ]
-    }
-  },
-  computed: {
-    revenueJobsChartData() {
-      return {
-        labels: dashboardData.monthlyData.map(item => item.month),
-        datasets: [
-          {
-            label: 'Revenue ($)',
-            data: dashboardData.monthlyData.map(item => item.revenue),
-            borderColor: '#48b0f7',
-            backgroundColor: 'rgba(72, 176, 247, 0.2)',
-            fill: true,
-            tension: 0.4
-          },
-          {
-            label: 'Jobs Completed',
-            data: dashboardData.monthlyData.map(item => item.jobs),
-            borderColor: '#4caf50',
-            backgroundColor: 'transparent',
-            borderDash: [5, 5],
-            tension: 0.4
-          }
-        ]
-      }
-    },
-    serviceDistributionChartData() {
-      return {
-        labels: dashboardData.serviceDistribution.map(item => item.name),
-        datasets: [
-          {
-            data: dashboardData.serviceDistribution.map(item => item.value),
-            backgroundColor: [
-              '#003f8a', // primary
-              '#48b0f7', // secondary
-              '#aaff00', // lime
-              '#f77f00', // orange
-              '#4caf50', // green
-              '#2c2c2c'  // charcoal
-            ],
-            borderWidth: 0
-          }
-        ]
-      }
-    },
-    leadSourcesChartData() {
-      return {
-        labels: dashboardData.leadSources.map(item => item.name),
-        datasets: [
-          {
-            data: dashboardData.leadSources.map(item => item.value),
-            backgroundColor: [
-              '#48b0f7', // secondary
-              '#003f8a', // primary
-              '#f77f00', // orange
-              '#4caf50', // green
-              '#2c2c2c'  // charcoal
-            ],
-            borderWidth: 0
-          }
-        ]
-      }
-    }
-  },
-  methods: {
-    getStatIcon(index) {
-      const icons = [DollarSignIcon, BarChart2Icon, UsersIcon, TrendingUpIcon]
-      return icons[index % icons.length]
-    },
-    getStatColor(index) {
-      const colors = ['primary', 'secondary', 'green', 'orange']
-      return colors[index % colors.length]
-    },
-    getStatusClass(status) {
-      switch (status) {
-        case 'Completed':
-          return 'bg-green-100 text-green'
-        case 'Scheduled':
-          return 'bg-blue-100 text-primary'
-        case 'Pending':
-          return 'bg-yellow-100 text-yellow-600'
-        case 'Canceled':
-          return 'bg-red-100 text-red-500'
-        default:
-          return 'bg-gray-100 text-gray-500'
-      }
-    }
-  }
-}
-</script>

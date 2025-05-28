@@ -1,63 +1,37 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './index.html',
-    './src/**/*.{vue,js}',
+    "./index.html",
+    "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        // Primary colors
-        'primary': {
-          DEFAULT: '#003f8a', // Deep Blue
-          light: '#1a5ba6',
-          dark: '#002d63',
+        primary: {
+          DEFAULT: '#4A90E2',
+          light: '#D6F1FF',
+          dark: '#3A73B4',
         },
-        'secondary': {
-          DEFAULT: '#48b0f7', // Sky Blue
-          light: '#7ac6f9',
-          dark: '#1a9cf5',
+        secondary: {
+          DEFAULT: '#A7E9EB',
+          light: '#D6F8F9',
+          dark: '#7BCBCD',
         },
-        // Secondary colors
-        'white': '#ffffff', // Pure White
-        'light-gray': '#e6e6e6', // Light Gray
-        // Accent colors
-        'charcoal': {
-          DEFAULT: '#2c2c2c', // Dark Charcoal
-          light: '#444444',
-          dark: '#1a1a1a',
+        neutral: {
+          DEFAULT: '#4A4A4A',
+          light: '#EDEDED',
+          dark: '#2A2A2A',
         },
-        'lime': {
-          DEFAULT: '#aaff00', // Bright Lime/Neon Green
-          light: '#c4ff4d',
-          dark: '#88cc00',
-        },
-        // Optional branding add-ons
-        'orange': {
-          DEFAULT: '#f77f00', // Rust Remover/Before-After
-          light: '#ff9a33',
-          dark: '#cc6900',
-        },
-        'green': {
-          DEFAULT: '#4caf50', // Eco-Friendly
-          light: '#6ec071',
-          dark: '#3d8c40',
-        },
+        success: '#4CAF50',
+        warning: '#F77F00',
+        danger: '#DC2626',
+        info: '#48B0F7',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         card: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      },
-      animation: {
-        'water-ripple': 'water-ripple 1.5s infinite ease-out',
-      },
-      keyframes: {
-        'water-ripple': {
-          '0%': { transform: 'scale(0.95)', opacity: '1' },
-          '100%': { transform: 'scale(1.2)', opacity: '0' },
-        },
       },
     },
   },
